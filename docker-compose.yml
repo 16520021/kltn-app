@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+  app:
+    image: flask-server/python:v1.3
+    ports:
+      - "5000:5555"
+    restart: unless-stopped
+    environment:
+      PORT: 5555
+    volumes:
+      - ./:/app

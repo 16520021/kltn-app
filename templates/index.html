@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{ title }}</title>
+    <style>
+        body {
+            text-align: center;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.1/socket.io.min.js"></script>
+</head>
+
+<body style="background-color: black;">
+    <div id="container">
+        <canvas id="canvasOutput" style="display: none;"></canvas>
+        <video autoplay="true" id="videoElement"></video>
+    </div>
+
+    <div class='video'>
+        <img id="image">
+    </div>
+    <div class='result-status'>
+        <p id="status" style="color: chartreuse; font-size: 2rem;"></p>
+    </div>
+    <script type="text/javascript" charset="utf-8">
+        var socket = io('https://192.168.99.100:5000');
+
+        socket.on('connect', function () {
+            console.log("Connected...!", socket.connected)
+        });
+
+        const video = document.getElementById("videoElement");
+
+        video.width = 500;
+        video.height = 375;
+        scaleFactor = 1;
+
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(function (err0r) {
+                    console.log(err0r)
+                    console.log("Something went wrong!");
+                });
+        }
+
+        // let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+        // let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
+        // let cap = new cv.VideoCapture(video);
+
+        const FPS = 60;
+
+        setInterval(() => {
+            var w = video.width * scaleFactor;
+            var h = video.height * scaleFactor;
+            var canvas = document.getElementById('canvasOutput');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, w, h);
+
+            var type = "image/png"
+            var data = document.getElementById("canvasOutput").toDataURL(type);
+            data = data.replace('data:' + type + ';base64,', '');
+            //split off junk at the beginning
+            socket.emit('image', data);
+        }, 1000);
+
+
+        socket.on('response_back', function (image) {
+            if (image != null) {
+                const image_id = document.getElementById('image');
+                image_id.src = image;
+            } else console.log("no image");
+        });
+
+        socket.on('response_plot', function (status) {
+            if (status != null) {
+                console.log(status)
+            } else console.log("no image");
+        });
+
+        var statusTxt = 'cablirating...';
+        var currentStat = '';
+        var count = 0;
+        socket.on('response_status', function (status) {
+            if (status != null) {
+                statusTxt = status;
+
+            //     if(currentStat === '')
+            //         currentStat = statusTxt;
+            // };
+
+            // if (currentStat !== statusTxt ) count++;
+
+            // if (count > 2) {
+            //     count = 0;
+            //     if (statusTxt == 'Normal') statusTxt = 'Drowsy';
+            //     else statusTxt = 'Normal';
+            }
+
+            document.getElementById("status").innerHTML = statusTxt;
+        });
+
+    </script>
+</body>
+
+</html>
